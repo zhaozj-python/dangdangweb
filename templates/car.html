@@ -1,0 +1,454 @@
+{% load static %}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN""http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>购物车</title>
+    <script src="/static/js/jquery_1.8.js"></script>
+    <script src="/static/js/jquery_cookie.js"></script>
+    <script src="{% static 'js/jquery.1.4.2-min.js' %}"></script>
+    <script>
+        $(function () {
+            {#console.log($('tr[id]'));#}
+            $('tr[id]').each(function f() {
+
+                var a = $(this).find('input').val();
+                var span = $(this).find('.row3 .sp1').text().split('¥')[1];
+                $(this).find('.row4 .red').text("¥" + (a * span).toFixed(2))
+                sum()
+            })
+            var span = document.getElementById('font1');
+            span.innerHTML=$('tr[id]').length
+        })
+
+        function add(th) {
+            {#var num = document.getElementById('inp1');#}
+            {#var span = document.getElementsByClassName('red')[0];#}
+            {#var sp1 = document.getElementById('sp1');#}
+            var num = $(th).prev();
+            var span = $(th).parent().parent().next().children()[0];
+            var sp1 = $(th).parent().parent().prev().children()[0];
+            num.val(Number(num.val()) + 1)
+            $.ajax({
+                type: 'get',
+                url: "{% url 'car:add' %}",
+                data: 'count=1&id=' + $(th).attr('book'),
+                success: function (data) {
+                    if (data.ok === "1") {
+                        span.innerText = "¥" + (sp1.innerText.split("¥")[1] * num.val()).toFixed(2)
+                        sum()
+                    }
+
+                }
+
+            })
+        }
+
+        function minu(th) {
+            var num = th.nextElementSibling;
+            var span = $(th).parent().parent().next().children()[0];
+            var sp1 = $(th).parent().parent().prev().children()[0];
+            if (Number(num.value) === 1) {
+                th.disabled = '1'
+            } else {
+                num.value = Number(num.value) - 1
+            }
+            $.ajax({
+                type: 'get',
+                url: "{% url 'car:modify_book' %}",
+                data: 'count=' + num.value + '&id=' + $(th).next().next().attr('book'),
+                success: function (data) {
+                    if (data.ok === "1") {
+                        span.innerText = "¥" + (sp1.innerText.split("¥")[1] * num.value).toFixed(2)
+                        sum()
+                    }
+                }
+            })
+        }
+
+        function inp(th) {
+            var span = $(th).parent().parent().next().children()[0];
+            var sp1 = $(th).parent().parent().prev().children()[0];
+            if (isNaN(th.value) || th.value <= 0) {
+                alert('您输入的数字有误!');
+                th.value = $(th).attr("book");
+                span.innerText = "¥" + (sp1.innerText.split("¥")[1] * th.value).toFixed(2)
+            } else {
+                $.ajax({
+                type: 'get',
+                url: "{% url 'car:modify_book' %}",
+                data: 'count=' + th.value + '&id=' + $(th).next().attr('book'),
+                success: function (data) {
+                    if (data.ok === "1") {
+                        span.innerText = "¥" + (sp1.innerText.split("¥")[1] * th.value).toFixed(2)
+                        sum()
+                    }
+                }
+            })
+
+            }
+            sum()
+        }
+
+        function del(th) {
+            var t = window.confirm("是否删除");
+            if (t) {
+                $.ajax({
+                    type: 'get',
+                    url: "{% url 'car:del_car' %}",
+                    async: false,
+                    data: 'id=' + $(th).attr('book'),
+                    success: function (data) {
+                        if (data.ok === "1") {
+                            $(th).parent().parent().parent().remove();
+                            var a = $(th).parent().prev().prev().children().eq(1);
+                            a.value = 0;
+                            var span = document.getElementById('font1');
+                            span.innerHTML=$('tr[id]').length
+                            alert('删除成功!')
+                        }
+                    }
+                })
+                sum()
+                console.log($('tr[id]').length)
+                console.log(typeof $('tr[id]').length)
+                if ($('tr[id]').length == 0) {
+                    var div = document.getElementsByClassName('empty')[0];
+                    var div1 = document.getElementById('cart');
+                    var div2 = document.getElementById('district');
+                    var div3 = document.getElementById('J_totalMoneyBlock');
+                    div.style.display = '';
+                    div1.style.display = "none";
+                    div2.style.display = "none";
+                    div3.style.display = "none";
+                }
+            }
+        }
+
+        function del_all() {
+            var t = window.confirm("是否全部删除");
+            if (t) {
+                var tbody = document.getElementById('tb1');
+                var tr = tbody.children;
+
+                console.log(tr)
+                for (var i = tr.length - 1; i > -1; i--) {
+                    {#$(tr[i]).remove();#}
+                    var a1 = tr[i].children[4].children[0].children[1];
+                    a1.value = 0;
+                    $.ajax({
+                        type: 'get',
+                        url: "{% url 'car:del_car' %}",
+                        data: 'id=' + $(tr[i]).attr('book'),
+                        success: function (data) {
+                            if (data.ok === "1") {
+                                var div = document.getElementsByClassName('empty')[0];
+                                var div1 = document.getElementById('cart');
+                                var div2 = document.getElementById('district');
+                                var div3 = document.getElementById('J_totalMoneyBlock');
+                                div.style.display = '';
+                                div1.style.display = "none";
+                                div2.style.display = "none";
+                                div3.style.display = "none";
+                                console.log(111)
+                            }
+                        }
+                    })
+
+                }
+
+                sum()
+            }
+        }
+
+        function sum() {
+            var choose = $("[name='row1']");
+
+            var sum = 0;
+
+            for (var i = 0; i < choose.size(); i++) {
+                var num = choose[i].parentNode.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.children[0];
+                {#var sp1 = choose[i].parentNode.nextElementSibling.nextElementSibling.nextElementSibling.children[0];#}
+                sum += Number(num.innerText.split("¥")[1]);
+                var span = document.getElementsByClassName('red big ooline alignright')[0];
+                var sp = document.getElementById('payAmount');
+                if (num) {
+                    span.innerHTML = "¥" + sum + ".00";
+                    sp.innerHTML = "¥" + sum + ".00";
+                } else {
+                    span.innerHTML = "¥" + "0";
+                    sp.innerHTML = "¥" + "0";
+                }
+            }
+        }
+
+        function conse() {
+            var i = '{{ user }}';
+            var span = document.getElementsByClassName('red big ooline alignright')[0];
+            var sum = span.innerText.split("¥")[1];
+            if (i !== 'None') {
+                window.location.href = "{% url 'car:order' %}"
+            }else {
+                window.location.href = "{% url 'user:login' %}?url=car"
+            }
+        }
+    </script>
+    <link rel="shortcut icon" href="/static/images/favicon.ico?v=20160901" type="image/x-icon">
+    <link href="/static/css/shopping_cart_new.css" rel="stylesheet" type="text/css">
+    <link href="/static/css/footer_150526.css" rel="stylesheet" type="text/css"/>
+</head>
+
+<body style="padding-bottom:82px">
+
+<link href="/static/css/header_960_150611.css" rel="stylesheet" type="text/css">
+<script src="/static/js/pagetop2015_0827.js" charset="gb2312" type="text/javascript"></script>
+
+<div id="hd">
+    <div id="tools">
+        <div class="tools">
+            <div class="ddnewhead_operate" dd_name="顶链接">
+
+                <div class="ddnewhead_welcome" display="none;">
+                    <span id="nickname"><span class="hi hi_none">欢迎光临当当，请</span><a href="{% url 'user:login' %}?url=car1"
+                                                                                   class="login_link">登录</a><a
+                            href="{% url 'user:register' %}?url=car1">免费注册</a></span>
+
+                </div>
+                <script>
+                    var span = document.getElementById('nickname');
+                    var i = '{{ user }}';
+                    if (i !== 'None' && i !== "AnonymousUser") {
+                        span.innerHTML = "欢迎{{ user }}" + "&nbsp&nbsp" + "<a href=\"{% url 'user:exit' %}\" class=\"login_link\">退出</a>"
+                    }
+
+                </script>
+                <div class="new_head_znx" id="znx_content" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+    <div id="header_end"></div>
+    <!--CreateDate  2016-09-28 11:30:01--></div>
+<form action="http://search.dangdang.com/search.aspx" id="bootpagetopSearch" name="bootpagetopSearch"
+      method="GET"></form>
+<script type="text/javascript">var nick_num = 0;
+initHeaderOperate();</script>
+<script type="text/javascript" src="http://orderb.dangdang.com/queryunpaid?callback=Unpaid_Data"></script>
+<div class="shoppingcart_wrapper" id="ad_cpt_11850">
+    <div>
+        <a href="http://a.dangdang.com/tjump.php?q=ddo84XQOf357bOs8tXGg5%2F%2F0oVoDImt3DFWsMqu7ZMSVsfUMeOQJueASNiMLjq%2FdrXMLCKnVfyKEahteAh1ih%2ByKYrKGzhvL20LVbDzObRambBA0YPpivy5hR5foQ4Rt%2BTB"
+           target="_blank" rel="nofollow"><img src="http://img62.ddimg.cn/2017/1/11/2017011111344969879.jpg"></a></div>
+</div>
+<div class="logo_line">
+    <div class="w960">
+        <div class="shopping_procedure"><span class="current">我的购物车</span><span>填写订单</span><span>完成订单</span></div>
+        <div class="logo"><a href="#"><img src="images/bz_logo_car.jpg" alt=""></a></div>
+    </div>
+</div>
+<div class="add_line" id="district">
+    <div class="w960">
+        <div class="address" id="dp_adress">
+            <span class="icon_adr">&nbsp;</span>配送地址：
+            <div class="select_add">
+                <span class="text fn-select-address">北京市东城区</span>
+                <div class="area_pop" style="display:none;">
+                    <a href="javascript:district.close()" class="close"></a>
+                    <ul class="tab">
+                        <li id="ap_province" class="fn-show-province"><a href="javascript:void(0)"
+                                                                         id="selected_111">北京</a></li>
+                        <li id="ap_city" class="fn-show-city"><a href="javascript:district.show_city_init(this)"
+                                                                 id="selected_1">北京市</a></li>
+                        <li id="ap_area" class="fn-show-area choose"><a href="javascript:district.show_area_init(this)"
+                                                                        id="selected_1110101">东城区</a></li>
+                        <li id="ap_village" style="display:none" class="fn-show-village"><a
+                                href="javascript:district.show_village_init(this)" id="selected_-1">请选择</a></li>
+                    </ul>
+                    <ul class="list list_notaligned fn-adress">
+
+                    </ul>
+                </div>
+            </div>
+            <!--<a href="#" class="tip"></a>-->
+            <span class="tip_c" style="display:none;">针对不同配送地址，您的货物可能出现缺货或无货状态，敬请谅解。</span>
+        </div>
+    </div>
+</div>
+
+<div class="w960" id="cart">
+    <ul class="shopping_title" id="j_carttitle">
+        <li class="f1"><a id="j_selectall" href="javascript:void(0)" class="checknow fn-checkall check_on" dd_name="全选">选中</a>全选
+        </li>
+        <li class="f2">商品信息</li>
+        <li class="f3">单价（元）</li>
+        <li class="f4">数量</li>
+        <li class="f4">金额（元）</li>
+        <li class="f5">操作</li>
+    </ul>
+    <div class="fn-shops" id="J_cartContent">
+        <div class="fn-shop">
+            <table border="0" cellspacing="0" cellpadding="0" class="shop_title">
+                <tbody>
+                <tr>
+                    <td><a href="javascript:void(0)" dd_name="选中店铺" class="checknow fn-shop-checkall check_on">选中</a>
+                    </td>
+                    <td><span class="shop_icon"></span></td>
+                    <td><a href="http://www.dangdang.com" target="_blank">当当自营</a></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="shopping_list">
+                <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                    <tbody id="tb1" data-stock="22388" data-offline="false" data-productid="24147882"
+                           data-timestamp="1484488454000" data-orderforspupormo="0">
+                    {% for i in car %}
+                        <tr id="tr_424893864" class="" book="{{ i.book_id }}">
+                            <td class="row1"><a href="javascript:void(0)" data-item="424893864"
+                                                class="fn-product-check checknow check_on" name="row1">选中</a></td>
+                            <td class="row_img"><a href="{% url 'index:book_details' %}?id={{ i.book_id }}" target="_blank"
+                                                   dd_name="查看详情"> <img onmouseout="$(this).parent().next().hide()"
+                                                                        onmouseover="$(this).parent().next().show()"
+                                                                        src="{% static i.book_cover %}" width="80" height="80">
+                            </a></td>
+                            <td class="row_name">
+                                <div class="name"><a href="{% url 'index:book_details' %}?id={{ i.book_id }}" title=""
+                                                     target="_blank" dd_name="查看详情"
+                                                     style="word-break:break-all;  word-wrap:break-word;">{{ i.book_name }}</a>
+                                </div>
+                            </td>
+                            <td class="row3"><span class="sp1">¥{{ i.dang_price }}</span></td>
+                            <td data-minbuy="0" class="fn-count-tip row3 "><span class="amount fn-updatecount "
+                                                                                 data-value="1"><a dd_name="减少数量"
+                                                                                                   href="javascript:void(0)"
+                                                                                                   onclick="minu(this)"
+                                                                                                   book="{{ i.book_id }}">-</a><input
+                                    data-value="1" value="{{ i.count }}" type="text" onblur="inp(this)"
+                                    book="{{ i.count }}"><a
+                                    dd_name="增加数量" href="javascript:void(0)" book="{{ i.book_id }}" onclick="add(this)">+</a></span>
+                            </td>
+                            <td class="row4"><span class="red">¥{{ i.dang_price }}</span></td>
+                            <td class="row5 ">
+                                <span><a href="javascript:void(0)" data-item="424893864" class="fn-remove-product"
+                                         dd_name="删除普通品" onclick="del(this)" book="{{ i.book_id }}">删除</a></span></td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                    <tfoot>
+                    <tr class="total">
+                        <td class="row1">&nbsp;</td>
+                        <td class="row_img">店铺合计</td>
+                        <td colspan="2">&nbsp;</td>
+                        <td colspan="3" class="row4"><span class="red big ooline alignright">¥</span></td>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="shipping_add" style="display:none;"></div>
+        </div>
+    </div>
+    <div class="shoppingcart_loading" id="J_cartLoading" style="display: none;"><img height="30" width="30"
+                                                                                     src="images/loading.gif"></div>
+</div>
+
+<div id="hide_div" style="height:0px;visibility:hidden;"></div>
+<div style="position:static;bottom:-20px;z-index: 101;width:100%;left:0px;">
+    <div class="shopping_total" id="J_totalMoneyBlock">
+        <div class="shopping_total_right">
+            <a class="total_btn fn-checkout" id="checkout_btn" dd_name="结算" onclick="conse()">结&nbsp;&nbsp;算</a>
+            <div class="subtotal">
+                <p><span class="cartsum">总计(不含运费)：</span><span id="payAmount" class="price"></span></p>
+
+                <p><span class="cartsum">已节省：</span><span id="totalFavor">¥0.00</span></p>
+            </div>
+
+        </div>
+        <div class="shopping_total_left" id="J_leftBar">
+            <a id="j_selectall2" href="javascript:void(0)" class="checknow fn-checkall check_on" dd_name="全选">选中</a>全选
+            <a id="j_removeproducts" href="javascript:void(0)" class="fn-batch-remove" dd_name="批量删除按钮"
+               onclick="del_all()">批量删除</a>
+            <span>已选择<font color="red" id="font1"></font>件商品</span>
+            <div id="J_batchRemoveProductBox" style="display: none;z-index:-1;left:0px;" class="pop_del"><p>
+                您确定要批量删除商品吗？</p><a href="javascript:;" class="pop_btn fn-confirm-batchremovebox">确定</a><a
+                    href="javascript:;" class="pop_btn fn-close-batchremovebox">取消</a></div>
+            <div id="J_batchAddWishBox" style="display: none;z-index:-1;left:85px;" class="pop_del col "><p>
+                您确定要批量移入收藏吗？</p><a href="javascript:;" class="pop_btn fn-confirm-batchaddwish">确定</a><a
+                    href="javascript:;" class="pop_btn fn-close-batchwishbox">取消</a></div>
+        </div>
+    </div>
+</div>
+<div id="J_errorBox" style="display: none;z-index:102" class="pop_del col">
+    <p></p>
+    <a class="pop_btn fn-close-removebox" href="javascript:;">确定</a>
+</div>
+<div id="J_addToWishTipHtml" style="display: none; position: absolute;"></div>
+<div id="J_addWishBox" style="display: none" class="pop_del col "><p>移入收藏后，将不在购物车显示，是否继续操作？</p><a href="javascript:;"
+                                                                                                  class="pop_btn fn-confirm-addwish">确定</a><a
+        href="javascript:;" class="pop_btn fn-close-wishbox">取消</a></div>
+<div id="J_removeProductBox" style="display: none;" class="pop_del"><p>您确定要删除商品吗？</p><a href="javascript:;"
+                                                                                        class="pop_btn fn-confirm-removebox">确定</a><a
+        href="javascript:;" class="pop_btn fn-close-removebox">取消</a></div>
+<div id="J_removeGiftBox" style="display: none;" class="pop_del"><p>您确定要删除赠品吗？</p><a href="javascript:;"
+                                                                                     class="pop_btn fn-confirm-removegiftbox">确定</a><a
+        href="javascript:;" class="pop_btn fn-close-removebox">取消</a></div>
+<div class="w960">
+    <div class="empty" id="empty" style="display:none">
+        <p>您的购物车还是空的，您可以：</p>
+        <a href="{% url 'index:index' %}" class="btn">去逛逛</a>
+    </div>
+
+</div>
+
+<div class="pop_del pop_ebook" style="left:460px; right:auto; top:-130px;display: none;" id="J_vnewzTipBox">
+    <a href="#" class="close"></a>
+    <h1>限时说明</h1>
+    <p>由于尾品会和新品汇的商品库存有限，我们只能为您保留<span class="red">20分钟</span>，否则尾品会及新品汇的商品将被删除，请尽快结算。</p>
+</div>
+
+
+<div id="footer">
+    <div class="footer">
+        <div class="footer_nav_box">
+            <div class="footer_copyright"><span>Copyright (C) 当当网 2004-2014, All Rights Reserved</span><a
+                    href="http://www.hd315.gov.cn/beian/view.asp?bianhao=010202001051000098" target="_blank"
+                    class="footer_img" rel="nofollow"><img src="http://img4.dangdang.com/bottom/validate.gif"></a><span><a
+                    href="http://www.miibeian.gov.cn/" target="_blank" rel="nofollow">京ICP证041189号</a></span><span>出版物经营许可证&nbsp;新出发京批字第直0673号</span>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="foot_tip_ad">广告</div>
+<style>
+    .foot_tip_ad {
+        width: 40px;
+        height: 40px;
+        font: 12px/40px "simsun";
+        text-align: center;
+        color: #fff;
+        background-color: #474747;
+        position: fixed;
+        right: 0;
+        bottom: 10px;
+        _position: absolute;
+        _bottom: auto;
+        _top: expression(eval(document.documentElement.scrollTop+document.documentElement.clientHeight-this.offsetHeight-(parseInt(this.currentStyle.marginTop,10)||0)-(parseInt(this.currentStyle.marginBottom,10)||0)));
+    }
+</style>
+
+
+<script>
+    var div = document.getElementById('empty')
+    var div1 = document.getElementById('cart');
+    var div2 = document.getElementById('district');
+    var div3 = document.getElementById('J_totalMoneyBlock');
+    console.log(typeof "{{ car }}")
+    console.log("{{ car }}")
+
+    if ("{{ car }}" === "[]" || "{{ car }}" === "") {
+        div.style.display = '';
+        div1.style.display = "none";
+        div2.style.display = "none";
+        div3.style.display = "none";
+    }
+</script>
+</body>
+</html>
